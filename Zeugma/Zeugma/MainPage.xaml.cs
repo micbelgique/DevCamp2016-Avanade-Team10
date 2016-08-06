@@ -12,6 +12,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using WindowsPreview.Kinect;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -22,9 +23,52 @@ namespace Zeugma
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        KinectSensor _sensor;
+        MultiSourceFrameReader frameReader;
+        IList<Body> bodies;
+
         public MainPage()
         {
             this.InitializeComponent();
+            Loaded += MainPage_Loaded;
+            Unloaded += MainPage_Unloaded;
+        }
+        private void MainPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (_sensor != null && _sensor.IsOpen)
+            {
+                _sensor.Close();
+            }
+        }
+        private void MainPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            _sensor = KinectSensor.GetDefault();
+            if (_sensor != null)
+            {
+                _sensor.Open();
+                frameReader = _sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Body);
+                frameReader.MultiSourceFrameArrived += FrameReader_MultiSourceFrameArrived;
+            }
+        }
+
+        private void FrameReader_MultiSourceFrameArrived(MultiSourceFrameReader sender, MultiSourceFrameArrivedEventArgs args)
+        {
+            var reference = args.FrameReference.AcquireFrame();
+            using (var frame = reference.BodyFrameReference.AcquireFrame())
+            {
+                if (frame != null)
+                {
+                    bodies = new Body[frame.BodyFrameSource.BodyCount];
+                    frame.GetAndRefreshBodyData(bodies);
+                    var bodiesTracked = (from b in bodies where b.IsTracked select b).ToList();
+                    var bodiesLeftHandClosed = (from b in bodiesTracked where b.HandLeftState == HandState.Closed || b.HandRightState == HandState.Closed select b).ToList();
+                    
+                    //TODO => envoyé les données reçues
+
+                    textBox.Text = bodiesTracked.Count + "";
+                    textBox2.Text = bodiesLeftHandClosed.Count + "";
+                }
+            }
         }
     }
 }
