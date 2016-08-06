@@ -1,20 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using WindowsPreview.Kinect;
 using Zeugma.Models;
+using Zeugma.Helpers;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -28,8 +19,9 @@ namespace Zeugma
         KinectSensor _sensor;
         MultiSourceFrameReader frameReader;
         IList<Body> bodies;
-        Sentence sentence = new Sentence("Le petit cheval brun mange de l'avoine bio.");
-        
+        Sentence sentence = new Sentence("Le petit cheval brun mange de l'avoine bio. S'il fait chaud, il faut lui donner de l'eau.");
+        int numberPeoples = 0;
+        int numberLeftHandClosedPeople = 0;
 
         public MainPage()
         {
@@ -42,6 +34,7 @@ namespace Zeugma
             Loaded += MainPage_Loaded;
             Unloaded += MainPage_Unloaded;
         }
+
         private void MainPage_Unloaded(object sender, RoutedEventArgs e)
         {
             if (_sensor != null && _sensor.IsOpen)
@@ -49,6 +42,7 @@ namespace Zeugma
                 _sensor.Close();
             }
         }
+
         private void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             _sensor = KinectSensor.GetDefault();
@@ -69,15 +63,56 @@ namespace Zeugma
                 {
                     bodies = new Body[frame.BodyFrameSource.BodyCount];
                     frame.GetAndRefreshBodyData(bodies);
+                    // number of peoples
                     var bodiesTracked = (from b in bodies where b.IsTracked select b).ToList();
+                    // number of participating peoples
                     var bodiesLeftHandClosed = (from b in bodiesTracked where b.HandLeftState == HandState.Closed || b.HandRightState == HandState.Closed select b).ToList();
-                    
-                    //TODO => envoyé les données reçues
 
                     textBox.Text = bodiesTracked.Count + "";
                     textBox2.Text = bodiesLeftHandClosed.Count + "";
+
+                    if (bodiesTracked.Count != numberPeoples || bodiesLeftHandClosed.Count != numberLeftHandClosedPeople)
+                    {
+                        numberPeoples = bodiesTracked.Count;
+                        numberLeftHandClosedPeople = bodiesLeftHandClosed.Count;
+                        sentence = Algorythm.MakeSentence(sentence, numberPeoples, numberLeftHandClosedPeople);
+
+                        /** TODO => send received data to view **/
+
+                        // for tests only
+                        drawPhrase(sentence);
+                    }
                 }
             }
+        }
+
+        // test function
+        private void drawPhrase(Sentence sentence)
+        {
+            string phraseVisible = "";
+            string phraseFormated = "";
+
+            var wordsVisible = (from retrieve in sentence.Words
+                         where retrieve.Formation == true
+                         where retrieve.Visible == true
+                         select retrieve).ToList();
+
+            var wordsFormated = (from retrieve in sentence.Words
+                               where retrieve.Formation == true
+                               select retrieve).ToList();
+
+            foreach (var word in wordsVisible)
+            {
+                phraseVisible += word.Value + " ";
+            }
+
+            foreach (var word in wordsFormated)
+            {
+                phraseFormated += word.Value + " ";
+            }
+
+            textBoxResult.Text = phraseFormated;
+            textBoxResult2.Text = phraseVisible;
         }
     }
 }
