@@ -1,29 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Zeugma.Models;
 
 namespace Zeugma.Helpers
 {
     public static class Algorythm
     {
+        // find word by order in the sentence
+        public static Predicate<Word> ByOrder(int order)
+        {
+            return delegate (Word word)
+            {
+                return word.Order == order;
+            };
+        }
+
         // get a sentence and parameters, return a sentence with calculated
         public static Sentence MakeSentence(Sentence sentence, int peoplePresent, int peopleParticipating)
         {
 
             // minimum number of peoples needed in sight to show full phrase
-            var peopleMin = 3;
+            var peopleMin = 10;
             // "maximum" minimum number of peoples who need to look at the camera to show the words in the right place
-            var peopleMax = 6;
-
-            // put all the words of the sentence in a words list
-            var words = new List<Word>();
-            foreach (var word in sentence.Words)
-            {
-                words.Add(word);
-            }
+            var peopleMax = 20;
 
             // % of words constructed
             var percentWords = 0;
@@ -41,7 +41,7 @@ namespace Zeugma.Helpers
                 percentWords = 100;
             }
 
-            // calculate the % of right displayed words among the created words
+            // calculate the % of right placed words among the created words
             if (peopleMax != 0)
             {
                 percentPhrase = (peopleParticipating / (peopleMax + (peoplePresent - peopleParticipating))) * 100;
@@ -51,39 +51,83 @@ namespace Zeugma.Helpers
                 percentPhrase = 100;
             }
 
-            /** TO DO : SEND SENTENCE TO VIEW **/
-
             // calculate number of words to construct
 
-            var numWordsCreated = (int)Math.Ceiling((double)(words.Count * percentWords) / 100);
-            var numWordsPhrase = (int)Math.Ceiling((double)(words.Count * percentPhrase) / 100);
+            var numWordsCreated = (int)Math.Ceiling((double)(sentence.Words.Count * percentWords) / 100);
+            var numWordsPhrase = (int)Math.Ceiling((double)(sentence.Words.Count * percentPhrase) / 100);
 
-            // select random words for creation
+            // get the number of words to construct or show
+            var actualNumberCreated = (from retrieve in sentence.Words
+                                       where retrieve.Formation == true
+                                       select retrieve).Count();
 
+            var actualNumberPhrase = (from retrieve in sentence.Words
+                                      where retrieve.Visible == true
+                                       select retrieve).Count();
 
-
-            // while minimum number of people to construct the words is not reached, calculate the words formation
-
-            return null;
-        }
-
-        public static void RandomWords(List<Word> words, int probability, int mode)
-        {
-            var length = words.Count();
-
-            // get random words in the words list and set them to true;
-
-            /*
-            if (mode == 0)
+            // if formated words number changed
+            if (numWordsCreated != actualNumberCreated)
             {
-                word.Formation = true;
-                word.Visible = false;
+                // while too many formated words
+                while (numWordsCreated > actualNumberCreated)
+                {
+                    var tempWords = (from retrieve in sentence.Words
+                                     where retrieve.Formation == true
+                                     select retrieve).ToList();
+
+                    Random random = new Random();
+                    int randomIndex = random.Next(tempWords.Count);
+
+                    // find a random formed word and destroy it
+                    sentence.Words.Find(ByOrder(tempWords[randomIndex].Order)).Formation = false;
+                }
+                // while too few formated words
+                while (numWordsCreated < actualNumberCreated)
+                {
+                    var tempWords = (from retrieve in sentence.Words
+                                     where retrieve.Formation == false
+                                     select retrieve).ToList();
+
+                    Random random = new Random();
+                    int randomIndex = random.Next(tempWords.Count);
+
+                    // find a random non formed word and form it
+                    sentence.Words.Find(ByOrder(tempWords[randomIndex].Order)).Formation = true;
+                }
             }
-            else if (mode == 1)
+
+            // if words in the right place number changed
+            if (numWordsPhrase != actualNumberPhrase)
             {
-                word.Formation = true;
-                word.Visible = true;
-            }*/
+                // while too many visible words, hide one random word
+                while (numWordsPhrase > actualNumberPhrase)
+                {
+                    var tempWords = (from retrieve in sentence.Words
+                                     where retrieve.Visible == true
+                                     select retrieve).ToList();
+
+                    Random random = new Random();
+                    int randomIndex = random.Next(tempWords.Count);
+
+                    sentence.Words.Find(ByOrder(tempWords[randomIndex].Order)).Visible = false;
+                }
+                // while too few visible words, show one random word
+                while (numWordsPhrase < actualNumberPhrase)
+                {
+                    var tempWords = (from retrieve in sentence.Words
+                                     where retrieve.Visible == false
+                                     select retrieve).ToList();
+
+                    Random random = new Random();
+                    int randomIndex = random.Next(tempWords.Count);
+
+                    sentence.Words.Find(ByOrder(tempWords[randomIndex].Order)).Visible = true;
+                }
+            }
+
+            /** TO DO : SEND SENTENCE TO VIEW **/
+
+            return sentence;
         }
     }
 }
