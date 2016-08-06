@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -13,6 +14,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WindowsPreview.Kinect;
+using Zeugma.Models;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -26,10 +28,17 @@ namespace Zeugma
         KinectSensor _sensor;
         MultiSourceFrameReader frameReader;
         IList<Body> bodies;
+        Sentence sentence = new Sentence("Le petit cheval brun mange de l'avoine bio.");
+        
 
         public MainPage()
         {
             this.InitializeComponent();
+            foreach(var str in sentence.Words)
+            {
+                Debug.WriteLine(str.Value);
+            }
+            
             Loaded += MainPage_Loaded;
             Unloaded += MainPage_Unloaded;
         }
