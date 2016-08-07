@@ -29,7 +29,7 @@ namespace Zeugma.Helpers
             // minimum number of peoples needed in sight to show full phrase
             var peopleMin = 2;
             // "maximum" minimum number of peoples who need to look at the camera to show the words in the right place
-            var peopleMax = 3;
+            var peopleMax = 2;
 
             // % of words constructed
             var percentWords = 0;
