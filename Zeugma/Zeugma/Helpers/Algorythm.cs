@@ -21,6 +21,10 @@ namespace Zeugma.Helpers
         // get a sentence and parameters, return a sentence with calculated
         public static Sentence MakeSentence(Sentence sentence, int peoplePresent, int peopleParticipating)
         {
+            if (peopleParticipating > peoplePresent)
+            {
+                peopleParticipating = peoplePresent;
+            }
 
             // minimum number of peoples needed in sight to show full phrase
             var peopleMin = 2;

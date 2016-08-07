@@ -77,7 +77,7 @@ namespace Zeugma
                         numberLeftHandClosedPeople = bodiesLeftHandClosed.Count;
                         sentence = Algorythm.MakeSentence(sentence, numberPeoples, numberLeftHandClosedPeople);
 
-                        /** TODO => send received data to view **/
+                        /** TODO => send sentence data to view **/
 
                         // for tests only
                         drawPhrase(sentence);
